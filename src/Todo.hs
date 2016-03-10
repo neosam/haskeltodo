@@ -31,7 +31,7 @@ module Todo (
 import Data.Time (Day)
 import Control.Monad.State.Lazy
 import Data.List (delete)
-
+import Data.Maybe (isNothing)
 
 --- Data declaration
 
@@ -183,3 +183,22 @@ replaceActiveTask aTask = do
   aTasks <- getActives
   modifyActives $ \tasks -> delete aTask aTasks
   addActive aTask
+
+-- | Remove completed tasks from active tasks
+cleanupActives :: TaskState ()
+cleanupActives = modifyActives $ \tasks -> filter isDone tasks
+
+-- | Check if the active task is done.
+isDone :: ActiveTask -> Bool
+isDone aTask = isNothing $ atFinished aTask
+
+
+-- | Get the overdue tasks
+getOverdue :: TaskState [ActiveTask]
+getOverdue = do
+  actives <- getActives
+  today <- getToday
+  let actives' = filter (\x -> atDue x > today) actives
+  return actives'
+
+
