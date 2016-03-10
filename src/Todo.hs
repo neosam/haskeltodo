@@ -28,7 +28,7 @@ module Todo (
        where
 
 
-import Data.Time.Calendar (Day)
+import Data.Time (Day)
 import Control.Monad.State.Lazy
 import Data.List (delete)
 
@@ -50,7 +50,7 @@ data ActiveTask = ActiveTask {
   atTask :: Task,   -- ^ The task itself.
   atDue :: Day,     -- ^ Deadline for to complete the task.
   atFinished :: Maybe Day -- ^ If and when the task was finished.
-} (Show, Read)
+} deriving (Show, Read)
 
 -- | Task which will randomly picked and activated
 data PooledTask = PooledTask {
@@ -58,7 +58,7 @@ data PooledTask = PooledTask {
   ptCoolDown :: Int, -- ^ How long the task should not be activated after finished
   ptLastFinished :: Day, -- ^ When the task was finished the last time
   ptProp :: Float -- ^ Propability if the task is picked
-} (Show, Read)
+} deriving (Show, Read)
 
 -- | Overall object which will be used for the state
 data TastMgmt = TaskMgmt {
@@ -155,24 +155,31 @@ addPool task = modifyPool $ \tasks -> task : tasks
 finishTask :: String -> TaskState ()
 finishTask taskTitle = do
   today <- getToday
-  modifyActiveTask taskTitle $ \task { atFinished = Just today }
+  _ <- modifyActiveTask taskTitle $ \task -> task { atFinished = Just today }
+  return ()
 
 -- | Modifier for a active task
-modifyActiveTask :: String -> (ActiveTask -> ActiveTask) -> TaskState ()
+modifyActiveTask :: String -> (ActiveTask -> ActiveTask) -> TaskState (Maybe String)
 modifyActiveTask title fn = do
   aTaskMaybe <- lookupActiveTask title
-  let aTask' = fn aTask
-  replaceActiveTask aTask
+  case aTaskMaybe of
+    Nothing -> return $ Just "Title not found"
+    Just aTask -> do
+      let aTask' = fn aTask
+      replaceActiveTask aTask
+      return Nothing
 
 -- | Find the active task with the given list
-lookupActiveTask :: String -> TaskState (Maybe PooledTask)
+lookupActiveTask :: String -> TaskState (Maybe ActiveTask)
 lookupActiveTask title = do
   actives <- getActives
   let tuples = map (\x -> (atTitle x, x)) actives
-  lookup title tuples
+  return $ lookup title tuples
 
 
--- |
-replacePooledTask :: ActiveTask -> TaskState ()
-replacePooledTask pTask = do
-  modifyActiveTask 
+-- | Replaces the task with the given title with the new one
+replaceActiveTask :: ActiveTask -> TaskState ()
+replaceActiveTask aTask = do
+  aTasks <- getActives
+  modifyActives $ \tasks -> delete aTask aTasks
+  addActive aTask
