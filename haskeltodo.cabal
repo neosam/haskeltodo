@@ -47,8 +47,8 @@ cabal-version:       >=1.10
 
 
 library
-  -- Modules exported by the library.
-  -- exposed-modules:     
+-- Modules exported by the library.
+  exposed-modules:     Todo
   
   -- Modules included in this library but not exported.
   -- other-modules:       
@@ -57,7 +57,9 @@ library
   -- other-extensions:    
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.8 && <4.9
+  build-depends:       base >=4.8 && <4.9,
+                       time >=1.5 && <1.6,
+                       mtl >=2.2 && <2.3
   
   -- Directories containing source files.
   hs-source-dirs:      src
